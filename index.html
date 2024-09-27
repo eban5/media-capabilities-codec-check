@@ -32,8 +32,10 @@
         // hls avc 
         const hlsMuxManifestUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
 
-        // multi-codec dash -- avc, hevc, vp9, av1
+        // dash with multiple bitrates
         const dashManifestUrl = 'https://dash.akamaized.net/dash264/TestCasesIOP33/adapatationSetSwitching/1/manifest.mpd';
+
+        // TODO get the public test manifest for multi-codec from Bitmovin research paper
 
     </script>
 </head>
@@ -75,6 +77,7 @@
         ]
         */
 
+        // MediaConvert multi-codec (4k) bitrate ladder for HLS
         const staticPBSPocCodecStrings = [
             { name: 'mediaconvert "avc1.640033"', type: 'video/mp4; codecs="avc1.640033"', width: 3840, height: 2160, bitrate: 14628411, framerate: 24 },
             { name: 'mediaconvert "avc1.4d401f"', type: 'video/mp4; codecs="avc1.4d401f"', width: 1280, height: 720, bitrate: 1540683, framerate: 24 },
@@ -118,7 +121,7 @@
 
             return { supportedCodecs, unsupportedCodecs };
         }
-
+        // TODO -- add support for DASH
         // Function to filter manifest text based on codec support
         function filterManifest(manifestText, unsupportedCodecs) {
             let filteredManifest = manifestText;
@@ -137,6 +140,7 @@
             return filteredManifest;
         }
 
+        // TODO -- add support for DASH
         // Function to load and filter the HLS manifest based on codec support
         async function loadHLS() {
             const codecSupport = await checkCodecSupport();
@@ -159,7 +163,7 @@
                 });
         }
 
-        // Load the HLS stream after checking codec support
+        // check the current browser's codec support
         window.onload = checkCodecSupport;
     </script>
 
