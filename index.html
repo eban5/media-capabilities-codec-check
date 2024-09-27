@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoJS DASH Player with Media Capabilities</title>
+    <link href="https://vjs.zencdn.net/7.21.2/video-js.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .video-container {
+            width: 80%;
+            max-width: 800px;
+        }
+
+        h3 {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="video-container">
+        <h3>VideoJS DASH Player</h3>
+        <video id="my-video" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360"
+            data-setup='{}'>
+            <!-- <source src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" type="application/x-mpegurl"> -->
+            <!-- <source src="http://ftp.itec.aau.at/datasets/mmsys18/testing/Beauty_4sec/multi-codec.mpd" type="application/dash+xml"> -->
+        </video>
+    </div>
+
+    <script src="https://vjs.zencdn.net/7.21.2/video.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@videojs/http-streaming@3.0.0/dist/videojs-http-streaming.js"></script> -->
+
+
+    <script>
+        
+        //const hlsManifestUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+        <!-- const hlsManifestUrl = 'https://dash.akamaized.net/dash264/TestCasesIOP33/adapatationSetSwitching/1/manifest.mpd'; -->
+        // Initialize VideoJS player
+        var player = videojs('my-video');
+
+        // Function to check codec support using Media Capabilities API
+        async function checkCodecSupport() {
+            const codecs = [
+                { type: 'video/mp4; codecs="avc1.42E01E"', name: 'AVC (H.264)' },
+                { type: 'video/mp4; codecs="hev1.1.6.L93.B0"', name: 'HEVC (H.265)' },
+                { type: 'video/webm; codecs="vp9"', name: 'VP9' }
+            ];
+
+            const supportedCodecs = [];
+            const unsupportedCodecs = [];
+
+            for (const codec of codecs) {
+                const result = await navigator.mediaCapabilities.decodingInfo({
+                    type: 'file',
+                    video: { contentType: codec.type, width: 1920, height: 1080, bitrate: 12000000, framerate: 24 }
+                });
+
+                if (result.supported) {
+                    supportedCodecs.push(codec.name);
+                } else {
+                    unsupportedCodecs.push(codec.name);
+                }
+            }
+
+            console.log('Supported Codecs:', supportedCodecs);
+            console.log('Unsupported Codecs:', unsupportedCodecs);
+
+            return { supportedCodecs, unsupportedCodecs };
+        }
+
+        // Function to filter manifest text based on codec support
+        function filterManifest(manifestText, unsupportedCodecs) {
+            let filteredManifest = manifestText;
+
+            // Remove unsupported codecs (e.g., HEVC or VP9 based on Media Capabilities API results)
+            unsupportedCodecs.forEach(codec => {
+                if (codec === 'HEVC (H.265)') {
+                    // For HEVC, remove lines that include "hev1" or "hvc1" codecs
+                    filteredManifest = filteredManifest.replace(/#EXT-X-STREAM-INF.*CODECS=".*hev1.*".*\n.*\n/g, '');
+                } else if (codec === 'VP9') {
+                    // If VP9 were in the manifest, remove it (though not commonly in HLS)
+                    filteredManifest = filteredManifest.replace(/#EXT-X-STREAM-INF.*CODECS=".*vp09.*".*\n.*\n/g, '');
+                }
+            });
+
+            return filteredManifest;
+        }
+
+        // Function to load and filter the HLS manifest based on codec support
+        async function loadHLS() {
+            const codecSupport = await checkCodecSupport();
+
+            // Fetch the HLS manifest
+            fetch(hlsManifestUrl)
+                .then(response => response.text())
+                .then(manifestText => {
+                    // Filter the manifest to remove unsupported codec variants
+                    const filteredManifest = filterManifest(manifestText, codecSupport.unsupportedCodecs);
+
+                    // Create a Blob URL with the filtered manifest
+                    const blob = new Blob([filteredManifest], { type: 'application/x-mpegURL' });
+                    const url = URL.createObjectURL(blob);
+                    console.log({url})
+
+                    // Set the filtered manifest as the video source
+                    
+                    player.src({src: url, type: 'application/x-mpegURL'});
+                });
+        }
+
+        // Load the HLS stream after checking codec support
+        window.onload = checkCodecSupport;
+    </script>
+
+</body>
+
+</html>
