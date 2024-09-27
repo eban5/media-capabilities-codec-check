@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VideoJS DASH Player with Media Capabilities</title>
-    <link href="https://vjs.zencdn.net/7.21.2/video-js.css" rel="stylesheet">
+    <link href="https://vjs.zencdn.net/7.21.4/video-js.css" rel="stylesheet">
     <style>
         body {
             background-color: #1e1e1e;
@@ -27,6 +27,15 @@
             text-align: center;
         }
     </style>
+    <script src="https://vjs.zencdn.net/7.21.4/video.js"></script>
+    <script type="module">
+        // hls avc 
+        const hlsMuxManifestUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
+
+        // multi-codec dash -- avc, hevc, vp9, av1
+        const dashManifestUrl = 'https://dash.akamaized.net/dash264/TestCasesIOP33/adapatationSetSwitching/1/manifest.mpd';
+
+    </script>
 </head>
 
 <body>
@@ -35,19 +44,12 @@
         <h3>VideoJS DASH Player</h3>
         <video id="my-video" class="video-js vjs-default-skin" controls preload="auto" width="640" height="360"
             data-setup='{}'>
-            <!-- <source src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" type="application/x-mpegurl"> -->
-            <!-- <source src="http://ftp.itec.aau.at/datasets/mmsys18/testing/Beauty_4sec/multi-codec.mpd" type="application/dash+xml"> -->
+            <source src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" type="application/x-mpegurl">
+            <!-- <source src='https://dash.akamaized.net/dash264/TestCasesIOP33/adapatationSetSwitching/1/manifest.mpd' type="application/dash+xml"> -->
         </video>
     </div>
 
-    <script src="https://vjs.zencdn.net/7.21.2/video.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@videojs/http-streaming@3.0.0/dist/videojs-http-streaming.js"></script> -->
-
-
     <script>
-        
-        //const hlsManifestUrl = 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8';
-        <!-- const hlsManifestUrl = 'https://dash.akamaized.net/dash264/TestCasesIOP33/adapatationSetSwitching/1/manifest.mpd'; -->
         // Initialize VideoJS player
         var player = videojs('my-video');
 
@@ -104,7 +106,7 @@
             const codecSupport = await checkCodecSupport();
 
             // Fetch the HLS manifest
-            fetch(hlsManifestUrl)
+            fetch(hlsMuxManifestUrl)
                 .then(response => response.text())
                 .then(manifestText => {
                     // Filter the manifest to remove unsupported codec variants
@@ -113,11 +115,11 @@
                     // Create a Blob URL with the filtered manifest
                     const blob = new Blob([filteredManifest], { type: 'application/x-mpegURL' });
                     const url = URL.createObjectURL(blob);
-                    console.log({url})
+                    console.log({ url })
 
                     // Set the filtered manifest as the video source
-                    
-                    player.src({src: url, type: 'application/x-mpegURL'});
+
+                    player.src({ src: url, type: 'application/x-mpegURL' });
                 });
         }
 
